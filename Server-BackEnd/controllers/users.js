@@ -1,5 +1,6 @@
 const User = require("../models/Users.js");
 bcrypt = require("bcryptjs");
+const { Op } = require("sequelize");
 
 const jwt = require("jsonwebtoken");
 
@@ -10,7 +11,9 @@ exports.userRegister = (req, res, next) => {
   const password = req.body.password;
   const userType = req.body.userType;
 
-  User.findOne({ where: { Email: email, Username: username } }).then((user) => {
+  User.findOne({
+    where: { [Op.or]: [{ Email: email }, { Username: username }] },
+  }).then((user) => {
     if (user) {
       res.status(401).json({ message: "User already Exists", user });
     } else {

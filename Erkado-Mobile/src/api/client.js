@@ -6,4 +6,8 @@ const client = axios.create({
   withCredentials: true,
 });
 
+export const setHeader = (accessToken) => {
+  client.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+};
+
 export default client;

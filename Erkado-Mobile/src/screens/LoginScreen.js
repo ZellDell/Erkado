@@ -27,13 +27,11 @@ function LoginScreen() {
 
   const login = async () => {
     const result = await onLogin(username, password);
-    console.log(result);
-    if (result) {
-      alert("Login Success!");
-    }
     if (result && result.error) {
-      alert(result.msg);
+      alert(result.error);
+      return;
     }
+    console.log("response-data: ", result);
   };
 
   useLayoutEffect(() => {

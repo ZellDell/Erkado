@@ -36,7 +36,7 @@ function HomeScreen() {
     const fetchUserInfo = async () => {
       const { Email, UserType, Username, UserId } = await onGetUser();
       setUserInfo({ Email, UserType, Username, UserId });
-      alert("Username: " + Username);
+      console.log("Username: " + Username);
     };
     fetchUserInfo();
   }, []);

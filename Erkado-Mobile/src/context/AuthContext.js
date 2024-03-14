@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { axios } from "axios";
+import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
-import client from "../api/client";
+import client, { setHeader } from "../api/client";
 
 const TOKEN_KEY = "Erkado-User-Token";
 const AuthContext = createContext({});
@@ -41,23 +41,29 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      const result = await client.post(`/user/login`, {
+      const { data } = await client.post(`/user/login`, {
         username,
         password,
       });
 
       setAuthState({
-        token: result.data.token,
+        token: data.token,
         authenticated: true,
       });
 
-      console.log(result.data);
+      const accessToken = data.token;
 
-      await SecureStore.setItemAsync(TOKEN_KEY, result.data.token);
+      await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
 
-      return result;
+      setHeader(accessToken);
+
+      return data;
     } catch (error) {
-      return { error: true, msg: error.response.data.msg || error };
+      const { response } = error;
+      if (response?.data) {
+        return response.data;
+      }
+      return { error: "***" + error.message || error };
     }
   };
 
@@ -78,11 +84,7 @@ export const AuthProvider = ({ children }) => {
 
   const getUser = async () => {
     try {
-      const result = await client.get(`/user/`, {
-        headers: {
-          Authorization: `Bearer ${authState.token}`,
-        },
-      });
+      const result = await client.get(`/user/`);
       console.log("User Info: ", result.data.userInfo);
       return result.data.userInfo;
     } catch (e) {
