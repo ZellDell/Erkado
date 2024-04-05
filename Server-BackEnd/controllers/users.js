@@ -1,4 +1,6 @@
-const User = require("../models/Users.js");
+const User = require("../models/users.js");
+const { FarmerInfo, TraderInfo } = require("../models/userInfo.js");
+
 bcrypt = require("bcryptjs");
 const { Op } = require("sequelize");
 
@@ -12,29 +14,43 @@ exports.userRegister = (req, res, next) => {
   const userType = req.body.userType;
 
   User.findOne({
-    where: { [Op.or]: [{ Email: email }, { Username: username }] },
+    where: { Username: username },
   }).then((user) => {
     if (user) {
-      res.status(401).json({ message: "User already Exists", user });
+      res.status(401).json({ message: "Username is already used" });
     } else {
-      bcrypt
-        .hash(password, 12)
-        .then((hashedPw) => {
-          User.create({
-            Username: username,
-            Email: email,
-            Password: hashedPw,
-            UserType: userType,
-          }).then((result) => {
-            res.status(201).json({ message: "User created!", result });
-          });
+      User.findOne({
+        where: { Email: email },
+      })
+        .then((user) => {
+          if (user) {
+            console.log("Email is already used");
+            res.status(401).json({ message: "Email is already used" });
+          } else {
+            bcrypt
+              .hash(password, 12)
+              .then((hashedPw) => {
+                User.create({
+                  Username: username,
+                  Email: email,
+                  Password: hashedPw,
+                  UserType: userType,
+                }).then((result) => {
+                  res.status(201).json({ message: "User created", result });
+                });
+              })
+              .catch((err) => {
+                if (!err.statusCode) {
+                  err.statusCode = 500;
+                  console.log("bcrypt error");
+                }
+                next(err);
+              });
+          }
         })
         .catch((err) => {
-          if (!err.statusCode) {
-            err.statusCode = 500;
-            console.log("bcrypt error");
-          }
-          next(err);
+          console.error("Error:", err);
+          res.status(500).json({ message: "Internal server error" });
         });
     }
   });
@@ -55,7 +71,7 @@ exports.userLogin = (req, res, next) => {
       bcrypt.compare(password, user.Password).then((isEqual) => {
         if (!isEqual) {
           return res.status(401).json({
-            message: "Invalid username or password",
+            message: "Invalid password",
           });
         }
 
@@ -65,31 +81,19 @@ exports.userLogin = (req, res, next) => {
             userId: user.UserID.toString(),
           },
           "ErkadoUserToken",
-          { expiresIn: "1m" }
+          { expiresIn: "1h" }
         );
 
-        res.json({ token: token, userId: user.UserID.toString() });
+        console.log(token);
+        res.status(201).json({
+          token: token,
+          userId: user.UserID.toString(),
+          UserType: user.UserType,
+        });
       });
     })
     .catch((err) => {
       console.error("Error:", err);
       res.status(500).json({ message: "Internal server error" });
     });
-};
-
-exports.getUserInfo = async (req, res, next) => {
-  const userID = req.userId;
-
-  const userInfo = await User.findOne({ where: { UserID: userID } });
-
-  const { UserID, Username, Email, UserType } = userInfo;
-
-  res.json({
-    userInfo: {
-      userId: UserID,
-      Username,
-      Email,
-      UserType,
-    },
-  });
 };

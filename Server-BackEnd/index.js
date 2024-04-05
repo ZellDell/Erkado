@@ -7,6 +7,8 @@ const multer = require("multer");
 const cors = require("cors");
 
 const userRoutes = require("./routes/users");
+const userInfoRoutes = require("./routes/userInfo");
+const cropRoutes = require("./routes/crops");
 
 app.use(cors({ origin: "http://localhost:3000" }));
 
@@ -30,6 +32,8 @@ app.use((req, res, next) => {
 });
 
 app.use("/user", userRoutes);
+app.use("/userInfo", userInfoRoutes);
+app.use("/crops", cropRoutes);
 
 app.use((error, req, res, next) => {
   console.log(error);
