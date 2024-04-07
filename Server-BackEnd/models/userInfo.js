@@ -119,10 +119,6 @@ const cropdetail = sequelize.define(
       type: Sequelize.INTEGER,
       allowNull: false,
     },
-    Quantity: {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-    },
   },
   {
     tableName: "cropdetail",

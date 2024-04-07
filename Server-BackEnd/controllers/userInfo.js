@@ -98,7 +98,6 @@ exports.setUserInfo = async (req, res, next) => {
           return cropdetail.create({
             FarmerID: result.FarmerID,
             CropID: crop.selectedCrop.CropID,
-            Quantity: crop?.quantity,
           });
         });
 
