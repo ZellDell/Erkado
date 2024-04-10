@@ -95,33 +95,17 @@ const purchasingdetail = sequelize.define(
       type: Sequelize.INTEGER,
       allowNull: false,
     },
+    CropType: {
+      type: Sequelize.STRING(255),
+      allowNull: false,
+    },
+    QualityTypeID: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+    },
   },
   {
     tableName: "purchasingdetail",
-    timestamps: false,
-  }
-);
-
-const cropdetail = sequelize.define(
-  "cropdetail",
-  {
-    CropDetailID: {
-      type: Sequelize.INTEGER,
-      autoIncrement: true,
-      allowNull: false,
-      primaryKey: true,
-    },
-    FarmerID: {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-    },
-    CropID: {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-    },
-  },
-  {
-    tableName: "cropdetail",
     timestamps: false,
   }
 );
@@ -130,5 +114,4 @@ module.exports = {
   FarmerInfo: FarmerInfo,
   TraderInfo: TraderInfo,
   purchasingdetail: purchasingdetail,
-  cropdetail: cropdetail,
 };

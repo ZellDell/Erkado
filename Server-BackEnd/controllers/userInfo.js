@@ -4,11 +4,11 @@ const {
   FarmerInfo,
   TraderInfo,
   purchasingdetail,
-  cropdetail,
 } = require("../models/userInfo.js");
+const { crops, qualitytype } = require("../models/crops.js");
 
 bcrypt = require("bcryptjs");
-const { Op } = require("sequelize");
+const { Op, where } = require("sequelize");
 
 const jwt = require("jsonwebtoken");
 
@@ -16,10 +16,11 @@ exports.getUserInfo = async (req, res, next) => {
   const userID = req.userId;
 
   const userCred = await User.findOne({ where: { UserID: userID } });
-  console.log("UserType", userCred);
+
   const { Username, Email, UserType } = userCred;
 
   let userInfo;
+  let purchasingDetails;
 
   if (UserType === "Farmer") {
     userInfo = await FarmerInfo.findOne({ where: { UserID: userID } });
@@ -27,6 +28,24 @@ exports.getUserInfo = async (req, res, next) => {
 
   if (UserType === "Trader") {
     userInfo = await TraderInfo.findOne({ where: { UserID: userID } });
+
+    if (userInfo) {
+      purchasingDetails = await purchasingdetail.findAll({
+        where: { TraderID: userInfo.TraderID },
+      });
+    }
+
+    if (purchasingDetails) {
+      for (const detail of purchasingDetails) {
+        const quality = await qualitytype.findAll({
+          where: {
+            QualityTypeID: detail.QualityTypeID,
+          },
+        });
+        console.log(quality);
+        detail.dataValues.Quality = quality;
+      }
+    }
   }
 
   if (userInfo === null) {
@@ -39,6 +58,7 @@ exports.getUserInfo = async (req, res, next) => {
 
   res.status(201).json({
     userInfo,
+    purchasingDetails,
     UserType,
     Username,
     Email,
@@ -53,7 +73,6 @@ exports.setUserInfo = async (req, res, next) => {
   const userID = req.userId;
   const profileImg = req.body.profileImg;
   const crops = req.body.crops;
-  console.log("isFarmer :", isFarmer);
 
   if (!isFarmer) {
     TraderInfo.create({
@@ -64,16 +83,19 @@ exports.setUserInfo = async (req, res, next) => {
       ProfileImg: profileImg,
     })
       .then((result) => {
-        const purchasingDetailsPromises = crops.map((crop) => {
-          console.log(crop);
-          return purchasingdetail.create({
-            TraderID: result.TraderID,
-            CropID: crop.selectedCrop.CropID,
-            PricePerUnit: crop?.price,
+        if (crops.length > 0) {
+          const purchasingDetailsPromises = crops.map((crop) => {
+            return purchasingdetail.create({
+              TraderID: result.TraderID,
+              CropID: crop.selectedCrop.CropID,
+              PricePerUnit: crop?.Price,
+              CropType: crop?.CropType,
+              QualityTypeID: crop?.QualityTypeID,
+            });
           });
-        });
 
-        return Promise.all(purchasingDetailsPromises);
+          return Promise.all(purchasingDetailsPromises);
+        }
       })
       .then((result) => {
         res.status(201).json({ message: "Trader Info has been set", result });
@@ -92,17 +114,6 @@ exports.setUserInfo = async (req, res, next) => {
       RSBSA: extraInfo,
       ProfileImg: profileImg,
     })
-      .then((result) => {
-        const cropDetailsPromises = crops.map((crop) => {
-          console.log(crop);
-          return cropdetail.create({
-            FarmerID: result.FarmerID,
-            CropID: crop.selectedCrop.CropID,
-          });
-        });
-
-        return Promise.all(cropDetailsPromises);
-      })
       .then((result) => {
         res.status(201).json({ message: "Farmer Info has been set", result });
         return;
@@ -142,5 +153,78 @@ exports.uploadImage = async (req, res) => {
   } catch (error) {
     console.error("Error uploading image to Cloudinary:", error);
     res.status(500).json({ error: "Error uploading image to Cloudinary" });
+  }
+};
+
+exports.updateCropInfo = async (req, res, next) => {
+  const userID = req.userId;
+
+  const newCrops = req.body.myCrops;
+
+  try {
+    // Retrieve existing purchasing details
+    const existingPurchasingDetails = await purchasingdetail.findAll({
+      where: { TraderID: userID },
+    });
+
+    // Identify changes
+    const existingCropMap = new Map(
+      existingPurchasingDetails.map((detail) => [detail.CropID, detail])
+    );
+
+    const toCreate = [];
+    const toUpdate = [];
+    const toRemove = [];
+
+    newCrops.forEach((newCrop) => {
+      const existingDetail = existingCropMap.get(newCrop.selectedCrop.CropID);
+      if (existingDetail) {
+        // Check for updates
+        if (
+          existingDetail.PricePerUnit !== newCrop.Price ||
+          existingDetail.CropType !== newCrop.CropType ||
+          existingDetail.QualityTypeID !== newCrop.QualityTypeID
+        ) {
+          toUpdate.push({ ...existingDetail, ...newCrop });
+        }
+        existingCropMap.delete(newCrop.selectedCrop.CropID);
+      } else {
+        // New crop
+        toCreate.push({
+          TraderID: userID,
+          CropID: newCrop.selectedCrop.CropID,
+          PricePerUnit: newCrop.Price,
+          CropType: newCrop.CropType,
+          QualityTypeID: newCrop.QualityTypeID,
+        });
+      }
+    });
+
+    toRemove.push(...existingCropMap.values());
+
+    // Perform updates
+
+    for (const detail of toUpdate) {
+      await detail.update({
+        PricePerUnit: detail.Price,
+        CropType: detail.CropType,
+        QualityTypeID: detail.QualityTypeID,
+      });
+    }
+
+    // Create new entries
+    await purchasingdetail.bulkCreate(toCreate);
+
+    // Remove entries
+    for (const detail of toRemove) {
+      await detail.destroy();
+    }
+
+    res
+      .status(200)
+      .json({ message: "Purchasing details updated successfully" });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

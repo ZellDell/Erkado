@@ -6,17 +6,12 @@ const path = require("path");
 const multers = require("../middleware/multer");
 const express = require("express");
 
-const traderController = require("../controllers/traders");
+const msgController = require("../controllers/messages");
 const isAuth = require("../middleware/is-Auth");
 
 const router = express.Router();
 
-router.get("/search", upload.none(), traderController.queryTraders);
-
-router.get(
-  "/searchInRadius",
-  upload.none(),
-  traderController.getTradersInRadius
-);
+router.get("/", upload.none(), isAuth, msgController.getConversation);
+router.get("/send", upload.none(), msgController.sendMessage);
 
 module.exports = router;

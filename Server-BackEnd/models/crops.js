@@ -11,14 +11,6 @@ const crops = sequelize.define(
       allowNull: false,
       primaryKey: true,
     },
-    CropTypeID: {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-    },
-    QualityTypeID: {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-    },
     CropName: {
       type: Sequelize.STRING(255),
       allowNull: false,
@@ -38,26 +30,6 @@ const crops = sequelize.define(
   }
 );
 
-const croptype = sequelize.define(
-  "croptype",
-  {
-    CropTypeID: {
-      type: Sequelize.INTEGER,
-      autoIncrement: true,
-      allowNull: false,
-      primaryKey: true,
-    },
-    Type: {
-      type: Sequelize.STRING(255),
-      allowNull: false,
-    },
-  },
-  {
-    tableName: "croptype",
-    timestamps: false,
-  }
-);
-
 const qualitytype = sequelize.define(
   "qualitytype",
   {
@@ -67,6 +39,7 @@ const qualitytype = sequelize.define(
       allowNull: false,
       primaryKey: true,
     },
+
     QualityType: {
       type: Sequelize.STRING(255),
       allowNull: false,
@@ -78,10 +51,4 @@ const qualitytype = sequelize.define(
   }
 );
 
-crops.belongsTo(croptype, { foreignKey: "CropTypeID", as: "Type" });
-crops.belongsTo(qualitytype, {
-  foreignKey: "QualityTypeID",
-  as: "QualityType",
-});
-
-module.exports = { crops: crops, croptype: croptype, qualitytype: qualitytype };
+module.exports = { crops: crops, qualitytype: qualitytype };

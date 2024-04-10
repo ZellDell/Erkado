@@ -13,10 +13,16 @@ const router = express.Router();
 
 router.get("/", isAuth, upload.none(), userInfoController.getUserInfo);
 router.post("/setInfo", isAuth, upload.none(), userInfoController.setUserInfo);
+router.post(
+  "/update",
+  isAuth,
+  upload.none(),
+  userInfoController.updateCropInfo
+);
 
 router.post(
   "/upload-image",
-  // isAuth,
+
   upload.single("image"),
   userInfoController.uploadImage
 );
