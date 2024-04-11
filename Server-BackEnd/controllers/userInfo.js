@@ -22,47 +22,51 @@ exports.getUserInfo = async (req, res, next) => {
   let userInfo;
   let purchasingDetails;
 
-  if (UserType === "Farmer") {
-    userInfo = await FarmerInfo.findOne({ where: { UserID: userID } });
-  }
-
-  if (UserType === "Trader") {
-    userInfo = await TraderInfo.findOne({ where: { UserID: userID } });
-
-    if (userInfo) {
-      purchasingDetails = await purchasingdetail.findAll({
-        where: { TraderID: userInfo.TraderID },
-      });
+  try {
+    if (UserType === "Farmer") {
+      userInfo = await FarmerInfo.findOne({ where: { UserID: userID } });
     }
 
-    if (purchasingDetails) {
-      for (const detail of purchasingDetails) {
-        const quality = await qualitytype.findAll({
-          where: {
-            QualityTypeID: detail.QualityTypeID,
-          },
+    if (UserType === "Trader") {
+      userInfo = await TraderInfo.findOne({ where: { UserID: userID } });
+
+      if (userInfo) {
+        purchasingDetails = await purchasingdetail.findAll({
+          where: { TraderID: userInfo.dataValues.TraderID },
         });
-        console.log(quality);
-        detail.dataValues.Quality = quality;
+      }
+
+      if (purchasingDetails) {
+        for (const detail of purchasingDetails) {
+          const quality = await qualitytype.findAll({
+            where: {
+              QualityTypeID: detail.QualityTypeID,
+            },
+          });
+          console.log(quality);
+          detail.dataValues.Quality = quality;
+        }
       }
     }
+
+    if (userInfo === null) {
+      return res
+        .status(401)
+        .json({ message: "New User", isNewUser: true, UserType });
+    }
+
+    console.log("userInfo", userInfo);
+    console.log("purchasingDetails", purchasingDetails);
+    res.status(201).json({
+      userInfo,
+      purchasingDetails,
+      UserType,
+      Username,
+      Email,
+    });
+  } catch (err) {
+    console.error(err);
   }
-
-  if (userInfo === null) {
-    return res
-      .status(401)
-      .json({ message: "New User", isNewUser: true, UserType });
-  }
-
-  console.log("userInfo", userInfo);
-
-  res.status(201).json({
-    userInfo,
-    purchasingDetails,
-    UserType,
-    Username,
-    Email,
-  });
 };
 
 exports.setUserInfo = async (req, res, next) => {
@@ -83,6 +87,7 @@ exports.setUserInfo = async (req, res, next) => {
       ProfileImg: profileImg,
     })
       .then((result) => {
+        console.log("=============", result);
         if (crops.length > 0) {
           const purchasingDetailsPromises = crops.map((crop) => {
             return purchasingdetail.create({
@@ -156,26 +161,101 @@ exports.uploadImage = async (req, res) => {
   }
 };
 
+// exports.updateCropInfo = async (req, res, next) => {
+//   const userID = req.userId;
+
+//   const newCrops = req.body.myCrops;
+
+//   try {
+//     // Retrieve existing purchasing details
+//     const existingPurchasingDetails = await purchasingdetail.findAll({
+//       where: { TraderID: userID },
+//     });
+
+//     // Identify changes
+//     const existingCropMap = new Map(
+//       existingPurchasingDetails.map((detail) => [detail.CropID, detail])
+//     );
+
+//     const toCreate = [];
+//     const toUpdate = [];
+//     const toRemove = [];
+
+//     newCrops.forEach((newCrop) => {
+//       const existingDetail = existingCropMap.get(newCrop.selectedCrop.CropID);
+//       if (existingDetail) {
+//         // Check for updates
+//         if (
+//           existingDetail.PricePerUnit !== newCrop.Price ||
+//           existingDetail.CropType !== newCrop.CropType ||
+//           existingDetail.QualityTypeID !== newCrop.QualityTypeID
+//         ) {
+//           toUpdate.push({ ...existingDetail, ...newCrop });
+//         }
+//         existingCropMap.delete(newCrop.selectedCrop.CropID);
+//       } else {
+//         // New crop
+//         toCreate.push({
+//           TraderID: userID,
+//           CropID: newCrop.selectedCrop.CropID,
+//           PricePerUnit: newCrop.Price,
+//           CropType: newCrop.CropType,
+//           QualityTypeID: newCrop.QualityTypeID,
+//         });
+//       }
+//     });
+
+//     toRemove.push(...existingCropMap.values());
+
+//     // Perform updates
+
+//     for (const detail of toUpdate) {
+//       await detail.update({
+//         PricePerUnit: detail.Price,
+//         CropType: detail.CropType,
+//         QualityTypeID: detail.QualityTypeID,
+//       });
+//     }
+
+//     // Create new entries
+//     await purchasingdetail.bulkCreate(toCreate);
+
+//     // Remove entries
+//     for (const detail of toRemove) {
+//       await detail.destroy();
+//     }
+
+//     res
+//       .status(200)
+//       .json({ message: "Purchasing details updated successfully" });
+//   } catch (error) {
+//     console.error("Error:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
 exports.updateCropInfo = async (req, res, next) => {
   const userID = req.userId;
-
   const newCrops = req.body.myCrops;
 
   try {
-    // Retrieve existing purchasing details
+    userInfo = await TraderInfo.findOne({ where: { UserID: userID } });
+    // Fetch all purchasing details that match the userID
     const existingPurchasingDetails = await purchasingdetail.findAll({
-      where: { TraderID: userID },
+      where: { TraderID: userInfo.dataValues.TraderID },
     });
 
-    // Identify changes
+    // Map existing purchasing details by CropID
     const existingCropMap = new Map(
       existingPurchasingDetails.map((detail) => [detail.CropID, detail])
     );
 
+    // Initialize arrays for changes
     const toCreate = [];
     const toUpdate = [];
     const toRemove = [];
 
+    // Iterate through new crops
     newCrops.forEach((newCrop) => {
       const existingDetail = existingCropMap.get(newCrop.selectedCrop.CropID);
       if (existingDetail) {
@@ -185,13 +265,15 @@ exports.updateCropInfo = async (req, res, next) => {
           existingDetail.CropType !== newCrop.CropType ||
           existingDetail.QualityTypeID !== newCrop.QualityTypeID
         ) {
+          // Update existing entry
           toUpdate.push({ ...existingDetail, ...newCrop });
         }
+        // Remove from map as it's handled
         existingCropMap.delete(newCrop.selectedCrop.CropID);
       } else {
-        // New crop
+        // New crop, add to creation list
         toCreate.push({
-          TraderID: userID,
+          TraderID: userInfo.dataValues.TraderID,
           CropID: newCrop.selectedCrop.CropID,
           PricePerUnit: newCrop.Price,
           CropType: newCrop.CropType,
@@ -200,25 +282,35 @@ exports.updateCropInfo = async (req, res, next) => {
       }
     });
 
+    // Whatever is left in the existing map needs to be removed
     toRemove.push(...existingCropMap.values());
 
-    // Perform updates
+    // Perform updates, creations, and removals
+    const updatePromises = [];
+    toUpdate.forEach((detail) => {
+      updatePromises.push(
+        purchasingdetail.update(
+          {
+            PricePerUnit: detail.Price,
+            CropType: detail.CropType,
+            QualityTypeID: detail.QualityTypeID,
+          },
+          { where: { PurchasingDetailID: detail.PurchasingDetailID } }
+        )
+      );
+    });
 
-    for (const detail of toUpdate) {
-      await detail.update({
-        PricePerUnit: detail.Price,
-        CropType: detail.CropType,
-        QualityTypeID: detail.QualityTypeID,
-      });
-    }
+    const createPromise = purchasingdetail.bulkCreate(toCreate);
+    const removePromises = [];
+    toRemove.forEach((detail) => {
+      removePromises.push(
+        purchasingdetail.destroy({
+          where: { PurchasingDetailID: detail.PurchasingDetailID },
+        })
+      );
+    });
 
-    // Create new entries
-    await purchasingdetail.bulkCreate(toCreate);
-
-    // Remove entries
-    for (const detail of toRemove) {
-      await detail.destroy();
-    }
+    await Promise.all([...updatePromises, createPromise, ...removePromises]);
 
     res
       .status(200)

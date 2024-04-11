@@ -81,7 +81,7 @@ exports.userLogin = (req, res, next) => {
             userId: user.UserID.toString(),
           },
           "ErkadoUserToken",
-          { expiresIn: "1h" }
+          { expiresIn: "24h" }
         );
 
         console.log(token);

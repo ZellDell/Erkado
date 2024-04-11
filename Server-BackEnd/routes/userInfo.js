@@ -22,7 +22,6 @@ router.post(
 
 router.post(
   "/upload-image",
-
   upload.single("image"),
   userInfoController.uploadImage
 );
