@@ -20,9 +20,9 @@
 // module.exports = sequelize;
 
 const Sequelize = require("sequelize");
-const sequelize = new Sequelize("erkadodb", "root", "", {
+const sequelize = new Sequelize("erkadodb", "root", null, {
   dialect: "mysql",
-  host: "localhost",
+  host: "127.0.0.1",
   port: "3306",
 });
 
