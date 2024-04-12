@@ -22,7 +22,7 @@
 const Sequelize = require("sequelize");
 const sequelize = new Sequelize("erkadodb", "root", "Erkado2024", {
   dialect: "mysql",
-  host: "93.127.198.109",
+  host: "localhost",
   port: "3306",
 });
 
