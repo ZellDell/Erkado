@@ -4,6 +4,7 @@ const initializeSocket = (io) => {
   io.on("connection", (socket) => {
     socket.on("JoinRoom", async ({ userID, otherID }) => {
       socket.join(userID);
+
       console.log("User joined room", userID, otherID);
 
       msgController.getConversationWithOther(userID, otherID, io);
@@ -11,6 +12,10 @@ const initializeSocket = (io) => {
 
     socket.on("SendMessage", async ({ SenderID, ReceiverID, Msg }) => {
       const result = msgController.sendMessage(SenderID, ReceiverID, Msg, io);
+    });
+
+    socket.on("CropUpdate", async () => {
+      console.log("Crop Updated");
     });
 
     socket.on("LeaveRoom", (userID) => {

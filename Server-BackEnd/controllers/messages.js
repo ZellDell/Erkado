@@ -16,7 +16,8 @@ const jwt = require("jsonwebtoken");
 exports.getConversation = async (req, res, next) => {
   const userId = req.userId;
   const userType = req.query.userType;
-  console.log("UserType", userType);
+  const query = req.query.query;
+
   try {
     const conversations = await Message.findAll({
       where: {
@@ -49,21 +50,38 @@ exports.getConversation = async (req, res, next) => {
         convo.SenderID == userId ? convo.ReceiverID : convo.SenderID;
 
       const isLastSender = convo.SenderID == userId;
+      console.log("===============", query);
+      const queryOptions = query
+        ? {
+            where: {
+              Fullname: {
+                [Op.like]: `%${query}%`,
+              },
+            },
+          }
+        : {
+            where: {
+              UserID: otherUserId,
+            },
+          };
 
       let Info;
       if (userType === "Trader") {
         Info = await FarmerInfo.findAll({
           where: {
             UserID: otherUserId,
+            ...queryOptions.where,
           },
         });
       } else {
         Info = await TraderInfo.findAll({
           where: {
             UserID: otherUserId,
+            ...queryOptions.where,
           },
         });
       }
+      console.log(Info.Fullname);
 
       convo.dataValues.isLastSender = isLastSender;
       convo.dataValues.Info = Info;

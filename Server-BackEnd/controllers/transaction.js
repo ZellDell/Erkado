@@ -21,7 +21,7 @@ exports.sendTransactionOffer = async (req, res, next) => {
       where: {
         FarmerUserID,
         TraderUserID,
-        Status: "Pending",
+        Status: "Pending" || "Ongoing",
       },
     });
 
@@ -74,6 +74,7 @@ exports.getTransaction = async (req, res, next) => {
   try {
     const userID = req.userId;
     const userType = req.query.UserType;
+    const Query = req.query.query;
 
     let transactions;
 
@@ -124,15 +125,45 @@ exports.getTransaction = async (req, res, next) => {
     // Fetch TraderInfo or FarmerInfo for each unique combination
     const uniqueTransactions = Object.values(groupedTransactions);
     const userInfoPromises = uniqueTransactions.map(async (group) => {
+      console.log("QUERY ===========", Query);
+      const queryOptionsF = Query
+        ? {
+            where: {
+              Fullname: {
+                [Op.like]: `%${Query}%`,
+              },
+            },
+          }
+        : {
+            where: {
+              UserID: group.transactions[0].FarmerUserID,
+            },
+          };
+      const queryOptionsT = Query
+        ? {
+            where: {
+              Fullname: {
+                [Op.like]: `%${Query}%`,
+              },
+            },
+          }
+        : {
+            where: {
+              UserID: group.transactions[0].TraderUserID,
+            },
+          };
+
       const [farmerInfo, traderInfo] = await Promise.all([
         FarmerInfo.findOne({
           where: {
             UserID: group.transactions[0].FarmerUserID,
+            ...queryOptionsF.where,
           },
         }),
         TraderInfo.findOne({
           where: {
             UserID: group.transactions[0].TraderUserID,
+            ...queryOptionsT.where,
           },
         }),
       ]);
