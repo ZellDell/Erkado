@@ -29,7 +29,7 @@ exports.getUserInfo = async (req, res, next) => {
 
     if (UserType === "Trader") {
       userInfo = await TraderInfo.findOne({ where: { UserID: userID } });
-
+      console.log("====userInfo", userInfo);
       if (userInfo) {
         purchasingDetails = await purchasingdetail.findAll({
           where: { TraderID: userInfo.dataValues.TraderID },
@@ -318,5 +318,37 @@ exports.updateCropInfo = async (req, res, next) => {
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+exports.updateUserInfo = async (req, res, next) => {
+  try {
+    newInfo = req.body.editedUserInfo;
+    console.log("======================", newInfo);
+    if (newInfo.userType) {
+      await FarmerInfo.update(
+        {
+          Fullname: newInfo.fullname,
+          RSBSA: newInfo.extraInfo,
+          ProfileImg: newInfo.profileImg,
+        },
+        { where: { UserID: newInfo.userId } }
+      );
+    } else {
+      await FarmerInfo.update(
+        {
+          Fullname: newInfo.fullname,
+          TraderType: newInfo.extraInfo,
+          ProfileImg: newInfo.profileImg,
+        },
+        { where: { UserID: newInfo.userId } }
+      );
+    }
+
+    res
+      .status(200)
+      .json({ success: true, message: "User Info updated successfully" });
+  } catch (err) {
+    console.log(err);
   }
 };

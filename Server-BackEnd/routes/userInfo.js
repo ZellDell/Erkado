@@ -19,6 +19,12 @@ router.post(
   upload.none(),
   userInfoController.updateCropInfo
 );
+router.post(
+  "/updateInfo",
+  isAuth,
+  upload.none(),
+  userInfoController.updateUserInfo
+);
 
 router.post(
   "/upload-image",
