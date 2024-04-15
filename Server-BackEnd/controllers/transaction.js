@@ -1,7 +1,11 @@
 const cloudinary = require("../cloud/cloudinary.js");
 const User = require("../models/users.js");
 const { crops, qualitytype } = require("../models/crops.js");
-const { Transaction, TransactionContent } = require("../models/transaction.js");
+const {
+  Transaction,
+  TransactionContent,
+  ViewAccess,
+} = require("../models/transaction.js");
 const {
   FarmerInfo,
   TraderInfo,
@@ -16,12 +20,13 @@ exports.sendTransactionOffer = async (req, res, next) => {
     const TraderUserID = req.body.traderUserID;
     const crops = req.body.crops;
 
+    console.log(crops);
     //Check if TransactionOfferExists
     const transactionOfferExists = await Transaction.findOne({
       where: {
         FarmerUserID,
         TraderUserID,
-        Status: "Pending" || "Ongoing",
+        Status: ["Pending", "Ongoing"],
       },
     });
 
@@ -35,7 +40,9 @@ exports.sendTransactionOffer = async (req, res, next) => {
     const uniqueCrops = new Set();
     let Total = 0;
     crops.forEach((crop) => {
-      uniqueCrops.add(crop.selectedCrop.CropID); // Assuming CropID is unique for each crop
+      uniqueCrops.add(
+        `${crop.selectedCrop.CropID}-${crop.CropType}-${crop.QualityTypeID}`
+      ); // Assuming CropID is unique for each crop
       Total += crop.Quantity * crop.PricePerUnit;
     });
     const TotalNumOfCrops = uniqueCrops.size; // Count the number of unique crops
@@ -48,6 +55,13 @@ exports.sendTransactionOffer = async (req, res, next) => {
       Total,
       TimeStamp: new Date().toISOString(),
       Status: "Pending",
+    });
+
+    await ViewAccess.create({
+      TransactionID: transaction.TransactionID,
+      Status: 0,
+      FarmerNotification: 0,
+      TraderNotification: 0,
     });
 
     // Save each crop as transaction content
@@ -89,6 +103,10 @@ exports.getTransaction = async (req, res, next) => {
             model: TransactionContent,
             as: "transactioncontent",
           },
+          {
+            model: ViewAccess,
+            as: "viewaccess",
+          },
         ],
       });
     } else if (userType === "Trader") {
@@ -101,6 +119,10 @@ exports.getTransaction = async (req, res, next) => {
           {
             model: TransactionContent,
             as: "transactioncontent",
+          },
+          {
+            model: ViewAccess,
+            as: "viewaccess",
           },
         ],
       });

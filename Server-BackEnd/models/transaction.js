@@ -86,13 +86,51 @@ const TransactionContent = sequelize.define(
   }
 );
 
+const ViewAccess = sequelize.define(
+  "viewaccess",
+  {
+    ViewAccessID: {
+      type: Sequelize.INTEGER,
+      autoIncrement: true,
+      allowNull: false,
+      primaryKey: true,
+    },
+    TransactionID: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+    },
+    Status: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
+    FarmerNotification: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
+    TraderNotification: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
+  },
+  {
+    tableName: "viewaccess",
+    timestamps: false,
+  }
+);
+
 TransactionContent.belongsTo(Transaction, { foreignKey: "TransactionID" });
+ViewAccess.belongsTo(Transaction, { foreignKey: "TransactionID" });
 Transaction.hasMany(TransactionContent, {
   foreignKey: "TransactionID",
   as: "transactioncontent",
+});
+Transaction.hasMany(ViewAccess, {
+  foreignKey: "TransactionID",
+  as: "viewaccess",
 });
 
 module.exports = {
   Transaction,
   TransactionContent,
+  ViewAccess,
 };

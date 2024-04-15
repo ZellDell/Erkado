@@ -61,8 +61,25 @@ exports.queryTraders = async (req, res, next) => {
       }
     }
 
+    const queryOptions =
+      queryType === "crop"
+        ? {
+            where: {
+              CropID: cropResults[0].dataValues.CropID,
+            },
+          }
+        : {};
+
     if (traderResults.length !== 0) {
       for (const trader of traderResults) {
+        const queryCropDetails = await purchasingdetail.findAll({
+          where: {
+            TraderID: trader.TraderID,
+            ...queryOptions.where,
+          },
+        });
+        trader.dataValues.queryCropDetails = queryCropDetails;
+
         const traderPurchasingDetails = await purchasingdetail.findAll({
           where: {
             TraderID: trader.TraderID,
@@ -70,7 +87,7 @@ exports.queryTraders = async (req, res, next) => {
         });
         trader.dataValues.purchasingDetails = traderPurchasingDetails;
       }
-      console.log(traderResults);
+
       res.status(200).json(traderResults);
     } else {
       return res.status(404).json({ message: "No results found" });
