@@ -245,3 +245,113 @@ exports.completeTransaction = async (req, res, next) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+exports.setTransactionViewAccess = async (req, res, next) => {
+  try {
+    const transactionID = req.body.TransactionID;
+    const userType = req.body.UserType;
+    const status = req.body.Status;
+
+    const checkStatus = await ViewAccess.findOne({
+      where: {
+        TransactionID: transactionID,
+      },
+    });
+
+    if (checkStatus && checkStatus.Status === 3) {
+      return res
+        .status(400)
+        .json({ message: "Transaction view access updated" });
+    }
+
+    if (status === 0) {
+      await ViewAccess.update(
+        {
+          Status: 3,
+          FarmerNotification: 0,
+          TraderNotification: 0,
+        },
+        {
+          where: {
+            TransactionID: transactionID,
+          },
+        }
+      );
+      res.status(200).json({ message: "Transaction view access updated" });
+      return;
+    } else {
+      if (checkStatus && checkStatus.Status === 0) {
+        await ViewAccess.update(
+          {
+            Status: 1,
+            [`${userType}Notification`]: 0,
+          },
+          {
+            where: {
+              TransactionID: transactionID,
+            },
+          }
+        );
+      } else if (checkStatus && checkStatus.Status === 1) {
+        if (userType === "Farmer") {
+          if (checkStatus.TraderNotification == 1) {
+            await ViewAccess.update(
+              {
+                Status: 1,
+                [`${userType}Notification`]: 0,
+              },
+              {
+                where: {
+                  TransactionID: transactionID,
+                },
+              }
+            );
+          } else {
+            await ViewAccess.update(
+              {
+                Status: 2,
+                [`${userType}Notification`]: 0,
+              },
+              {
+                where: {
+                  TransactionID: transactionID,
+                },
+              }
+            );
+          }
+        } else {
+          if (checkStatus.FarmerNotification === 1) {
+            await ViewAccess.update(
+              {
+                Status: 1,
+                [`${userType}Notification`]: 0,
+              },
+              {
+                where: {
+                  TransactionID: transactionID,
+                },
+              }
+            );
+          } else {
+            await ViewAccess.update(
+              {
+                Status: 2,
+                [`${userType}Notification`]: 0,
+              },
+              {
+                where: {
+                  TransactionID: transactionID,
+                },
+              }
+            );
+          }
+        }
+      }
+    }
+
+    res.status(200).json({ message: "Transaction view access updated" });
+  } catch (error) {
+    console.error("Error updating view access:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

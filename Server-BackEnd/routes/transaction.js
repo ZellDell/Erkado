@@ -32,4 +32,10 @@ router.post(
   transactionController.completeTransaction
 );
 
+router.post(
+  "/access",
+  upload.none(),
+  transactionController.setTransactionViewAccess
+);
+
 module.exports = router;
