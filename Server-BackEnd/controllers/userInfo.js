@@ -29,7 +29,7 @@ exports.getUserInfo = async (req, res, next) => {
 
     if (UserType === "Trader") {
       userInfo = await TraderInfo.findOne({ where: { UserID: userID } });
-      console.log("====userInfo", userInfo);
+
       if (userInfo) {
         purchasingDetails = await purchasingdetail.findAll({
           where: { TraderID: userInfo.dataValues.TraderID },

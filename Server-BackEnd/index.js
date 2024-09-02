@@ -1,14 +1,14 @@
-// server.js
+require("dotenv").config();
 
 const express = require("express");
 const app = express();
 
-const http = require("http").Server(app); // Import http module and create server instance
-const io = require("socket.io")(http); // Import and initialize Socket.io with the server instance
+const http = require("http").Server(app);
+const io = require("socket.io")(http);
 
 const bodyParser = require("body-parser");
 const sequelize = require("./util/database");
-const PORT = 3000;
+
 const multer = require("multer");
 const cors = require("cors");
 
@@ -24,7 +24,7 @@ const initializeSocket = require("./websocket/socket-io");
 // Initialize Socket.io
 initializeSocket(io);
 
-app.use(cors({ origin: "http://localhost:3000" }));
+app.use(cors({ origin: process.env.CORS_ORIGIN }));
 app.use(bodyParser.json());
 
 app.get("/", (req, res) => {
@@ -61,9 +61,9 @@ app.use((error, req, res, next) => {
 
 sequelize
   .sync()
-  .then((result) => {
-    http.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server is running on port ${PORT}`);
+  .then(() => {
+    http.listen(process.env.PORT, "0.0.0.0", () => {
+      console.log(`Server is running on port ${process.env.PORT}`);
     });
   })
   .catch((err) => {
